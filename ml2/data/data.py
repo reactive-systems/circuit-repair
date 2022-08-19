@@ -29,6 +29,9 @@ class Data(Artifact):
         self.data_frame = data_frame
         super().__init__(metadata=metadata)
 
+    def __str__(self) -> str:
+        return self.data_frame.to_string(max_rows=20, max_colwidth=20)
+
     def generator(self):
         """Yields data samples"""
         raise NotImplementedError
@@ -102,8 +105,32 @@ class SplitData(Artifact):
         """Statistics of each split"""
         return {name: split.stats() for name, split in self._splits.items()}
 
+    @staticmethod
+    def pretty_metadata_(metadata: Dict) -> str:
+        if "inputs" in metadata and "outputs" in metadata:
+            inputs = metadata["inputs"]
+            outputs = metadata["outputs"]
+            metadata["inputs"] = "placeholder_inputs"
+            metadata["outputs"] = "placeholder_outputs"
+        dump = json.dumps(metadata, indent=4, sort_keys=True)
+        dump = dump.replace('"placeholder_inputs"', str(inputs).replace("'", '"'))
+        dump = dump.replace('"placeholder_outputs"', str(outputs).replace("'", '"'))
+        if "inputs" in metadata and "outputs" in metadata:
+            metadata["inputs"] = inputs
+            metadata["outputs"] = outputs
+        return dump
+
+    @property
+    def pretty_metadata(self) -> str:
+        return self.pretty_metadata_(self.metadata)
+
     def save_to_path(self, path: str) -> None:
         """Saves splits to a folder"""
+
+        if not os.path.exists(path):
+            os.makedirs(path)
+            logger.info("Created directory %s", path)
+
         for name, split in self._splits.items():
             split_path = os.path.join(path, name)
             split.save_to_path(split_path)
@@ -111,7 +138,7 @@ class SplitData(Artifact):
 
         metadata_path = os.path.join(path, "metadata.json")
         with open(metadata_path, "w") as metadata_file:
-            json.dump(self.metadata, metadata_file, indent=2)
+            metadata_file.write(self.pretty_metadata)
             logger.info("Written metadata to %s", metadata_path)
 
     @classmethod

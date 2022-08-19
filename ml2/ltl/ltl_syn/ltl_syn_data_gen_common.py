@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel("INFO")
 
 
-def add_ltl_syn_data_gen_args(parser):
+def add_ltl_syn_data_gen_args(parser) -> None:
     parser.add_argument(
         "--add-to-wandb", action="store_true", help="add data to Weights and Biases"
     )

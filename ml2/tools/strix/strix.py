@@ -2,7 +2,7 @@
 
 import logging
 
-from ...globals import CONTAINER_REGISTRY
+from ...globals import IMAGE_BASE_NAME
 from ...ltl.ltl_syn import LTLSynStatus
 from ..containerized_grpc_service import ContainerizedGRPCService
 from ..protos import ltl_pb2
@@ -11,7 +11,7 @@ from . import strix_pb2, strix_pb2_grpc
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-STRIX_IMAGE_NAME = CONTAINER_REGISTRY + "/strix-grpc-server:latest"
+STRIX_IMAGE_NAME = IMAGE_BASE_NAME + "/strix-grpc-server:latest"
 
 
 class Strix(ContainerizedGRPCService):

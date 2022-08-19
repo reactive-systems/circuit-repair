@@ -102,12 +102,13 @@ class LTLSynData(SupervisedData):
                 "outputs": row["outputs"].split(",") if row["outputs"] else [],
                 "realizable": row["realizable"],
                 "circuit": row["circuit"],
+                "hash": row["hash"] if "hash" in row else "",
             }
             yield sample
 
     def generator(self):
         for sample in self.sample_generator():
-            yield LTLSpec.from_dict(sample), sample["circuit"]
+            yield LTLSpec.from_dict(sample), sample["circuit"], sample["hash"]
 
     def save_to_path(self, path: str) -> None:
         path = path + ".csv"
@@ -127,6 +128,7 @@ class LTLSynData(SupervisedData):
                 "inputs": str,
                 "outputs": str,
                 "realizable": int,
+                "hash": str,
             },
             keep_default_na=False,
         )

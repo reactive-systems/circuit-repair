@@ -48,6 +48,16 @@ class LTLSpec:
         return " & ".join(parenthesized_guarantees)
 
     @property
+    def assumption_list_str(self):
+        parenthesized_assumptions = [f"({assumption})" for assumption in self.assumptions]
+        return ",".join(parenthesized_assumptions)
+
+    @property
+    def guarantee_list_str(self):
+        parenthesized_guarantees = [f"({guarantee})" for guarantee in self.guarantees]
+        return ",".join(parenthesized_guarantees)
+
+    @property
     def formula_str(self):
         if self.assumptions:
             return f"({self.assumption_str}) -> ({self.guarantee_str})"

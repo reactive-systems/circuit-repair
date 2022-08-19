@@ -186,14 +186,29 @@ class Experiment(Artifact):
             generator, split, includes_target=True, steps=steps, training=training, verify=verify
         )
 
-    def eval_file(self, file: str, steps: int = None, training: bool = False, verify: bool = True):
+    def eval_file(
+        self,
+        file: str,
+        steps: int = None,
+        training: bool = False,
+        verify: bool = True,
+        mode: str = "eval",
+        identifier=None,
+    ):
         self.dataset_name
         dataset = self.dataset.load_from_path(
             self.dataset.local_path(self.dataset_name), splits=[file]
         )
         generator = dataset.generator(splits=[file])
         self.eval_generator(
-            generator, file, includes_target=True, steps=steps, training=training, verify=verify
+            generator,
+            file,
+            includes_target=True,
+            steps=steps,
+            training=training,
+            verify=verify,
+            mode=mode,
+            identifier=identifier,
         )
 
     def eval_dataset(
@@ -227,6 +242,14 @@ class Experiment(Artifact):
     @property
     def eval_dir(self):
         return self.eval_path(self.name)
+
+    @property
+    def gen_dir(self):
+        return self.gen_path(self.name)
+
+    @property
+    def tmp_dir(self):
+        return self.tmp_path(self.name)
 
     @property
     def init_dataset(self):
@@ -275,7 +298,7 @@ class Experiment(Artifact):
         return tf_dataset
 
     def prepared_tf_dataset(self, split):
-        if split not in self._prepared_tf_dataset:
+        if not split in self._prepared_tf_dataset:
             dataset = self.prepare_tf_dataset(self.tf_dataset(split))
             if self.cache_dataset:
                 dataset = dataset.cache()
@@ -373,6 +396,14 @@ class Experiment(Artifact):
         return os.path.join(cls.local_path(name), "eval")
 
     @classmethod
+    def gen_path(cls, name: str):
+        return os.path.join(cls.local_path(name), "gen")
+
+    @classmethod
+    def tmp_path(cls, name: str):
+        return os.path.join(cls.local_path(name), "tmp")
+
+    @classmethod
     def add_init_args(cls, parser):
         defaults = cls.get_default_args()
         if defaults["auto_version"]:
@@ -455,7 +486,7 @@ class Experiment(Artifact):
                 args_dict = parent_args
             save_to_wandb = args_dict.pop("save_to_wandb")
             stream_to_wandb = args_dict.pop("stream_to_wandb")
-            upload = args_dict.pop("upload")
+            upload = args_dict["upload"]
             experiment = cls(**args_dict)
             experiment.run(stream_to_wandb=stream_to_wandb)
             experiment.save(
@@ -498,7 +529,7 @@ class Experiment(Artifact):
                 experiment._callbacks += [TuneReporterCallback()]
                 experiment.run()
 
-            _ = tune.run(
+            analysis = tune.run(
                 tune_experiment,
                 callbacks=[WandbLoggerCallback(entity=WANDB_ENTITY, project=cls.WANDB_PROJECT)]
                 if stream_to_wandb

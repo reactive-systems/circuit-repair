@@ -18,6 +18,10 @@ def create_model(params, training, custom_pos_enc=False, attn_weights=False):
         custom_pos_enc, bool, whether a custom positional encoding is provided as additional input
         attn_weights: bool, whether attention weights are part of the output
     """
+
+    if not custom_pos_enc:
+        raise NotImplementedError
+
     params["return_attn_weights"] = attn_weights
     input = tf.keras.layers.Input((None, None), dtype=tf.int32, name="input")
     transformer_inputs = {"input": input}
@@ -117,12 +121,13 @@ class HierarchicalTransformer(tf.keras.Model):
         self.encoder_embedding = tf.keras.layers.Embedding(
             params["input_vocab_size"], params["d_embed_enc"]
         )
-        # encoder_positional_encoding_d1 = pe.positional_encoding(
-        #    params['input_length'][1], params['d_embed_enc'])
-        # self.encoder_positional_encoding = tf.repeat(
-        #    tf.expand_dims(encoder_positional_encoding_d1, axis=0),
-        #    repeats=[params['input_length'][0]],
-        #    axis=0)
+        encoder_positional_encoding_d1 = pe.positional_encoding(
+            params["input_length"][1], params["d_embed_enc"]
+        )
+        self.encoder_positional_encoding = tf.broadcast_to(
+            encoder_positional_encoding_d1,
+            [params["input_length"][0], params["input_length"][1], params["d_embed_enc"]],
+        )
         self.encoder_dropout = tf.keras.layers.Dropout(params["dropout_enc"])
 
         self.encoder_stack_d0 = transformer.TransformerEncoder(
@@ -176,7 +181,7 @@ class HierarchicalTransformer(tf.keras.Model):
         Args:
             inputs: dictionary that contains the following (optional) keys:
                 input: int tensor with shape (batch_size, input_length[0], input_length[1])
-                (positional_encoding: float tensor with shape (batch_size, input_length[0], input_length[1], d_embed_enc), custom postional encoding)
+                (positional_encoding: float tensor with shape (batch_size, input_length[0], input_length[1], d_embed_enc), custom positional encoding)
                 (target: int tensor with shape (batch_size, target_length))
             training: bool, whether model is called in training mode or not
         """
@@ -190,10 +195,8 @@ class HierarchicalTransformer(tf.keras.Model):
         if "positional_encoding" in inputs:
             positional_encoding = inputs["positional_encoding"]
         else:
-            raise NotImplementedError
-            # seq_len = tf.shape(input)[1]
-            # positional_encoding = self.encoder_positional_encoding[:, :
-            #                                                       seq_len, :]
+            seq_len = tf.shape(input)[2]
+            positional_encoding = self.encoder_positional_encoding[:, :, :seq_len, :]
 
         encoder_output, enc_attn_weights_local, enc_attn_weights_global = self.encode(
             input, input_padding_mask, positional_encoding, training

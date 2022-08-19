@@ -105,22 +105,21 @@ class ContainerizedGRPCService:
                     self.port,
                 )
 
+    def delete(self):
+        try:
+            if hasattr(self, "container"):
+                self.container.stop()
+                logger.info(
+                    "Stopped and removed container %s running %s on port %d",
+                    self.container.name,
+                    self.service_name,
+                    self.port,
+                )
+        except Exception as err:
+            print(err)
+
     def __del__(self):
-        if hasattr(self, "container"):
-            self.container.stop()
-            logger.info(
-                "Stopped and removed container %s running %s on port %d",
-                self.container.name,
-                self.service_name,
-                self.port,
-            )
+        self.delete()
 
     def __delete__(self, instance):
-        if hasattr(self, "container"):
-            self.container.stop()
-            logger.info(
-                "Stopped and removed container %s running %s on port %d",
-                self.container.name,
-                self.service_name,
-                self.port,
-            )
+        self.delete()

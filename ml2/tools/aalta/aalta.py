@@ -2,7 +2,7 @@
 
 import logging
 
-from ...globals import CONTAINER_REGISTRY
+from ...globals import IMAGE_BASE_NAME
 from ...ltl.ltl_sat import LTLSatStatus
 from ...trace import Trace
 from ..containerized_grpc_service import ContainerizedGRPCService
@@ -12,12 +12,12 @@ from . import aalta_pb2_grpc
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-AALTA_IMAGE_NAME = CONTAINER_REGISTRY + "/aalta-grpc-server:latest"
+IMAGE_NAME = IMAGE_BASE_NAME + "/aalta-grpc-server:latest"
 
 
 class Aalta(ContainerizedGRPCService):
     def __init__(self, cpu_count: int = 1, mem_limit: str = "2g", port: int = None):
-        super().__init__(AALTA_IMAGE_NAME, cpu_count, mem_limit, port, service_name="Aalta")
+        super().__init__(IMAGE_NAME, cpu_count, mem_limit, port, service_name="Aalta")
         self.stub = aalta_pb2_grpc.AaltaStub(self.channel)
 
     def check_sat(self, formula: str, timeout: int = None):

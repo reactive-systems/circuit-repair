@@ -49,7 +49,6 @@ def strix_worker_fn(
     ds_server.register_worker.remote()
     while ray.get(ds_server.has_unsolved_problems.remote()):
         problems = ray.get(ds_server.get_problems.remote())
-        # start = time.time()
         for problem_dict in problems:
             problem = LTLSpec.from_dict(problem_dict)
             status, circuit = strix.synthesize(

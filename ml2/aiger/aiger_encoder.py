@@ -1,17 +1,19 @@
 """AIGER circuit encoder"""
 
 import tensorflow as tf
-from typing import List
 
 from .aiger import parse, parse_no_header, Symbol
 from ..data.encoder import SeqEncoder
 from ..data.vocabulary import Vocabulary
+from typing import List
 
 NEWLINE_TOKEN = "<n>"
 COMPLEMENT_TOKEN = "<c>"
 LATCH_TOKEN = "<l>"
 REALIZABLE_TOKEN = "<r>"
 UNREALIZABLE_TOKEN = "<u>"
+SATISFIED_TOKEN = "<f>"  # note <s> is already start token, take <f> for fulfilled
+VIOLATED_TOKEN = "<v>"
 
 
 class AIGERSequenceEncoder(SeqEncoder):
@@ -23,6 +25,7 @@ class AIGERSequenceEncoder(SeqEncoder):
         components: List[str] = None,
         encode_start: bool = True,
         encode_realizable: bool = False,
+        include_satisfied_token: bool = False,
         inputs: List[str] = None,
         outputs: List[str] = None,
         unfold_negations: bool = False,
@@ -35,9 +38,11 @@ class AIGERSequenceEncoder(SeqEncoder):
         """
         self.components = components if components else ["inputs", "latches", "outputs", "ands"]
         self.encode_realizable = encode_realizable
+        self.include_satisfied_token = include_satisfied_token
         self.inputs = inputs
         self.outputs = outputs
         self.realizable = True
+        self.satisfied = True
         self.unfold_negations = unfold_negations
         self.unfold_latches = unfold_latches
         super().__init__(start, eos, pad, encode_start, vocabulary, tf_dtype)
@@ -48,6 +53,9 @@ class AIGERSequenceEncoder(SeqEncoder):
 
     def encode(self, sequence) -> bool:
         self.realizable = "i0 i0" in sequence
+        if self.include_satisfied_token:
+            self.satisfied = "s" == sequence[0]
+            sequence = sequence[2:]
         return super().encode(sequence)
 
     def lex(self) -> bool:
@@ -58,6 +66,11 @@ class AIGERSequenceEncoder(SeqEncoder):
                 self.tokens.append(REALIZABLE_TOKEN)
             else:
                 self.tokens.append(UNREALIZABLE_TOKEN)
+        if self.include_satisfied_token:
+            if self.satisfied:
+                self.tokens.append(SATISFIED_TOKEN)
+            else:
+                self.tokens.append(VIOLATED_TOKEN)
 
         try:
             aiger = parse(self.circuit)
@@ -132,13 +145,18 @@ class AIGERSequenceEncoder(SeqEncoder):
             realizable_token = self.sequence[:3]
             self.sequence = self.sequence[4:]
             if realizable_token not in (REALIZABLE_TOKEN, UNREALIZABLE_TOKEN):
-                self.error = "First token not realizable token"
+                self.error = "Realizability token expected but got " + realizable_token
                 return False
             else:
-                if realizable_token == REALIZABLE_TOKEN:
-                    self.realizable = True
-                else:
-                    self.realizable = False
+                self.realizable = realizable_token == REALIZABLE_TOKEN
+        if self.include_satisfied_token:
+            satisfied_token = self.sequence[:3]
+            self.sequence = self.sequence[4:]
+            if satisfied_token not in (SATISFIED_TOKEN, VIOLATED_TOKEN):
+                self.error = "Satisfied token expected but got " + satisfied_token
+                return False
+            else:
+                self.satisfied = satisfied_token == SATISFIED_TOKEN
 
         if "header" not in self.components or "symbols" not in self.components:
             num_inputs = len(self.inputs)
@@ -243,6 +261,11 @@ class AIGERSequenceEncoder(SeqEncoder):
             )
             aiger.symbols = symbols
         self.sequence = str(aiger)
+        if self.include_satisfied_token:
+            if self.satisfied:
+                self.sequence = "s " + self.sequence
+            else:
+                self.sequence = "v " + self.sequence
         return success
 
     def sort_tokens(self, tokens: list) -> None:

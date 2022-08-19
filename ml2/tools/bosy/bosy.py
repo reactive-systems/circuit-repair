@@ -2,7 +2,7 @@
 
 import logging
 
-from ...globals import CONTAINER_REGISTRY
+from ...globals import IMAGE_BASE_NAME
 from ...ltl import LTLSpec
 from ...ltl.ltl_syn.ltl_syn_status import LTLSynStatus
 from ..containerized_grpc_service import ContainerizedGRPCService
@@ -12,12 +12,12 @@ from . import bosy_pb2, bosy_pb2_grpc
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-BOSY_IMAGE_NAME = CONTAINER_REGISTRY + "/bosy-grpc-server:latest"
+IMAGE_NAME = IMAGE_BASE_NAME + "/bosy-grpc-server:latest"
 
 
 class BoSy(ContainerizedGRPCService):
     def __init__(self, cpu_count: int = 1, mem_limit: str = "2g", port: int = None):
-        super().__init__(BOSY_IMAGE_NAME, cpu_count, mem_limit, port, service_name="BoSy")
+        super().__init__(IMAGE_NAME, cpu_count, mem_limit, port, service_name="BoSy")
         self.stub = bosy_pb2_grpc.BoSyStub(self.channel)
         logger.info("Compiling BoSy ...")
         spec = LTLSpec.from_dict(

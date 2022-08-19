@@ -4,11 +4,13 @@ import logging
 from statistics import mean
 from statistics import median
 import os
+from typing import List, Iterable
 
 from ...data import Data
 from ...globals import LTL_SPEC_ALIASES, LTL_SPEC_BUCKET_DIR, LTL_SPEC_WANDB_PROJECT
 from ..ltl_lexer import lex_ltl
 from .ltl_spec import LTLSpec
+import hashlib
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -21,9 +23,23 @@ class LTLSpecData(Data):
     WANDB_PROJECT = LTL_SPEC_WANDB_PROJECT
 
     def __init__(self, dataset, metadata: dict = None):
-        self.dataset = dataset
+        self.dataset: List[LTLSpec] = dataset
         self.metadata = metadata
         logger.info("Successfully constructed dataset of %d LTL specifications", len(self.dataset))
+
+    def generator(self):
+        def hash(iterable_object: Iterable):
+            return hashlib.sha3_224(";".join(iterable_object).encode()).hexdigest()
+
+        for sample in self.dataset:
+            yield sample, hash(
+                [
+                    sample.assumption_list_str,
+                    sample.guarantee_list_str,
+                    sample.input_str,
+                    sample.output_str,
+                ]
+            )
 
     def rename_aps(self, input_aps, output_aps, random=True, renaming=None):
         for specification in self.dataset:

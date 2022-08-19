@@ -1,16 +1,5 @@
 syntax = "proto3";
 
-message LTLFormula {
-    string formula = 1;
-}
-
-message LTLSpecification {
-    repeated string inputs = 1;
-    repeated string outputs = 2;
-    repeated string guarantees = 3;
-    repeated string assumptions = 4;
-}
-
 message LTLSatProblem {
     string formula = 1;
     bool simplify = 2;
@@ -24,10 +13,17 @@ message LTLSatSolution {
 
 message LTLTraceMCProblem {
     string formula = 1;
-    string trace = 2;
-    string timeout = 3;
+    string trace = 3;
+    string timeout = 4;
 }
 
 message TraceMCSolution {
     string status = 1;
+}
+
+message LTLSpecification {
+    repeated string inputs = 1;
+    repeated string outputs = 2;
+    repeated string guarantees = 3;
+    repeated string assumptions = 4;
 }

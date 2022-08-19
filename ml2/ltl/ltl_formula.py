@@ -20,8 +20,7 @@ class LTLFormula:
         self._notation = notation
         self._tokens = tokens
 
-    @property
-    def ast(self) -> BinaryAST:
+    def make_ast(self):
         if not self._ast:
             if self._notation == "infix":
                 self._ast = parse_infix_ltl(self._str)
@@ -29,6 +28,10 @@ class LTLFormula:
                 self._ast = parse_prefix_ltl(self._str)
             else:
                 raise ValueError(f"Initialized with invalid notation {self._notation}")
+
+    @property
+    def ast(self) -> BinaryAST:
+        self.make_ast()
         return self._ast
 
     def to_str(self, notation: str = None) -> str:
@@ -48,6 +51,7 @@ class LTLFormula:
         return self._tokens
 
     def size(self) -> int:
+        self.make_ast()
         return self._ast.size()
 
     @classmethod

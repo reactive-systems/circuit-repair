@@ -247,41 +247,8 @@ class LTLSynExperiment(Seq2SeqExperiment):
             results.append(beam_result)
         return results
 
-    def wandb_log_stats(self, stats: Dict, beamsize: int, alpha: float, split: str):
-        if self.stream_to_wandb:
-            log_dict = {
-                "data": split,
-                "beam size": beamsize,
-                "alpha": alpha,
-                "samples": 0,
-                "encoding_error": 0,
-                "match": 0,
-                "satisfied": 0,
-                "decoding_error": 0,
-                "violated": 0,
-                "beam_search_satisfied": 0,
-                "invalid": 0,
-                "timeout": 0,
-                "steps": 0,
-                "error": 0,
-                "accuracy": 0.0,
-                "accuracy_encoded": 0.0,
-            }
-
-            for k, v in stats.items():
-                log_dict[k] = v
-
-            self.evaluation_table.add_data(*(list(log_dict.values())))
-
-    def upload_wandb_log(self):
-        index = self.evaluation_table.columns.index("accuracy")
-        accuracy = 0.0
-        for row in self.evaluation_table.data:
-            accuracy = row[index] if row[index] > accuracy else accuracy
-        wandb.run.log({"best_test_accuracy": accuracy})
-        wandb.run.log({self.evaluation_table_name: self.evaluation_table})
-
     def eval_wandb_init(self):
+        self.stream_to_wandb = True
         wandb.init(
             config=self.args,
             entity=WANDB_ENTITY,
@@ -290,27 +257,6 @@ class LTLSynExperiment(Seq2SeqExperiment):
             project=self.WANDB_PROJECT,
             id=self.wandb_run_id,
             resume="auto",
-        )
-        self.evaluation_table_name = "evaluation_metrics"
-        self.evaluation_table = wandb.Table(
-            columns=[
-                "data",
-                "beam size",
-                "alpha",
-                "samples",
-                "encoding_error",
-                "match",
-                "satisfied",
-                "decoding_error",
-                "violated",
-                "beam_search_satisfied",
-                "invalid",
-                "timeout",
-                "steps",
-                "error",
-                "accuracy",
-                "accuracy_enc",
-            ]
         )
 
     def eval(
@@ -539,7 +485,6 @@ class LTLSynExperiment(Seq2SeqExperiment):
         stats_filepath = os.path.join(eval_gen_dir, "stats.json")
         with open(stats_filepath, "w") as stats_file:
             json.dump(stats, stats_file, indent=4)
-        self.wandb_log_stats(stats=stats, beamsize=self.beam_size, alpha=self.alpha, split=name)
 
     @property
     def eval_paths(self) -> list:

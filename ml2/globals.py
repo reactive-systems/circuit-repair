@@ -12,7 +12,7 @@ ML2_BUCKET = os.environ.get("ML2_GCP_BUCKET", "ml2-bucket")
 
 # Docker
 
-CONTAINER_REGISTRY = os.environ.get("ML2_CONTAINER_REGISTRY", "ghcr.io/reactive-systems/ml2")
+IMAGE_BASE_NAME = os.environ.get("ML2_IMAGE_BASE_NAME", "ghcr.io/reactive-systems/ml2")
 
 # Weights and Biases
 
@@ -41,3 +41,9 @@ LTL_SPEC_WANDB_PROJECT = "ltl-spec"
 LTL_SYN_ALIASES = {}
 LTL_SYN_BUCKET_DIR = "ltl-syn"
 LTL_SYN_WANDB_PROJECT = "ltl-syn"
+
+# LTL repair synthesis
+
+LTL_REP_ALIASES = {}
+LTL_REP_BUCKET_DIR = "ltl-repair"
+LTL_REP_WANDB_PROJECT = "ltl-repair"
