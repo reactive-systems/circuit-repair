@@ -1,17 +1,17 @@
-================================================
-ML2: Machine Learning for Mathematics and Logics
-================================================
+======================================================
+Iterative Circuit Repair Against Formal Specifications
+======================================================
 
 
 .. image:: https://img.shields.io/pypi/pyversions/ml2
     :target: https://www.python.org
-.. image:: https://img.shields.io/pypi/v/ml2
-    :target: https://pypi.org/project/ml2/
-.. image:: https://img.shields.io/github/license/reactive-systems/ml2 
+.. image:: https://img.shields.io/github/license/reactive-systems/ml2
     :target: https://github.com/reactive-systems/ml2/blob/main/LICENSE
 
 
-ML2 is an open source Python library for machine learning research on mathematical and logical reasoning problems. The library includes the (re-)implementation of the research papers `Teaching Temporal Logics to Neural Networks <https://iclr.cc/virtual/2021/poster/3332>`_ and `Neural Circuit Synthesis from Specification Patterns <https://proceedings.neurips.cc/paper/2021/file/8230bea7d54bcdf99cdfe85cb07313d5-Paper.pdf>`_. So far, the focus of ML2 is on propositional and linear-time temporal logic (LTL) and sequence-to-sequence models, such as the `Transformer <https://arxiv.org/abs/1706.03762>`_ and `hierarchical Transformer <https://arxiv.org/abs/2006.09265>`_. ML2 is actively developed at `CISPA Helmholtz Center for Information Security <https://cispa.de/en>`_.
+This is the implementation of *Iterative Circuit Repair Against Formal Specifications* (`ICLR'23 <https://openreview.net/forum?id=SEcSahl0Ql>`_). It builds on the `ML2 library <https://github.com/reactive-systems/ml2>`_. 
+
+ML2 is an open source Python library for machine learning research on mathematical and logical reasoning problems. The library includes the (re-)implementation of the research papers `Teaching Temporal Logics to Neural Networks <https://iclr.cc/virtual/2021/poster/3332>`_, `Neural Circuit Synthesis from Specification Patterns <https://proceedings.neurips.cc/paper/2021/file/8230bea7d54bcdf99cdfe85cb07313d5-Paper.pdf>`_ and `Iterative Circuit Repair Against Formal Specifications <https://openreview.net/forum?id=SEcSahl0Ql>`_. So far, the focus of ML2 is on propositional and linear-time temporal logic (LTL) and sequence-to-sequence models, such as the `Transformer <https://arxiv.org/abs/1706.03762>`_ and `hierarchical Transformer <https://arxiv.org/abs/2006.09265>`_. ML2 is actively developed at `CISPA Helmholtz Center for Information Security <https://cispa.de/en>`_.
 
 
 Requirements
@@ -27,11 +27,6 @@ Installation
 
 **Before installing ML2, please note the Docker requirement.**
 
-From PyPI
-~~~~~~~~~
-
-Install ML2 from PyPI with ``pip install ml2``.
-
 From Source
 ~~~~~~~~~~~
 
@@ -39,7 +34,7 @@ To install ML2 from source, clone the git repo and install with pip as follows:
 
 .. code:: shell
 
-    git clone https://github.com/reactive-systems/ml2.git && \
+    git clone https://github.com/MatCos/ml2.git && \
     cd ml2 && \
     pip install .
 
@@ -49,91 +44,59 @@ For development pip install in editable mode and include the development depende
 
     pip install -e .[dev]
 
-
-Neural Circuit Synthesis (`presented at NeurIPS 21 <https://proceedings.neurips.cc/paper/2021/file/8230bea7d54bcdf99cdfe85cb07313d5-Paper.pdf>`_)
+Iterative Circuit Repair Against Formal Specifications (`to appear at ICLR'23 <https://openreview.net/forum?id=SEcSahl0Ql>`_)
 --------------------------------------------------------------------------------------------------------------------------------------------------------
 
-In this project, hierarchical Transformers were trained to synthesize hardware circuits directly out of high-level specifications in a temporal logic. The lack of sufficient amounts of training data was tackled with a method to generate large amounts of additional training data, i.e., pairs of specifications and circuits implementing them by mining common specification patterns from the annual synthesis competition `SYNTCOMP <syntcomp.org>`_.
+We present a deep learning approach for repairing sequential circuits against formal specifications given in linear-time temporal logic (LTL). Given a defective circuit and its formal specification, we train Transformer models to output circuits that satisfy the corresponding specification. We propose a separated hierarchical Transformer for multimodal representation learning of the formal specification and the circuit. We introduce a data generation algorithm that enables generalization to more complex specifications and out-of-distribution datasets. In addition, our proposed repair mechanism significantly improves the automated synthesis of circuits from LTL specifications with Transformers. It improves the state-of-the-art by 6.8 percentage points on held-out instances and 11.8 percentage points on an out-of-distribution dataset from the annual reactive synthesis competition.
+
+Datasets
+~~~~~~~~
+
+A notebook guiding through the data generation can be found in *notebooks/repair_datasets_creation.ipynb*. A notebook giving an overview over all created datasets can be found in *notebooks/datasets.ipynb*. We provide a tabular overview at `Google Sheets <https://docs.google.com/spreadsheets/d/e/2PACX-1vRshLfy0d6xFXVWOey0QTslL0cnf-DVpgnmdKsLiqAjGfYp2p0iLH_9gxGssw9bTc75PStkuoSY2TQm/pubhtml?gid=975068129&single=true>`_. 
 
 Training
 ~~~~~~~~
 
-To train a hierarchical Transformer with default parameters:
+To train a separated hierarchical Transformer with default parameters:
 
 .. code:: shell
 
-    python -m ml2.ltl.ltl_syn.ltl_syn_hier_transformer_experiment train
+    python -m ml2.ltl.ltl_repair.ltl_repair_sep_hier_transformer_experiment train -n exp-repair-gen-96 -d scpa-repair-gen-96 --steps 20000 --val-freq 100 -u --tf-shuffle-buffer-size 10000
 
 Evaluation
 ~~~~~~~~~~
+To evaluate a model on the ``Repair`` dataset from our paper run the following command.
 
-To evaluate the hierarchical Transformer from our paper:
+.. code:: shell
+
+    python -m ml2.ltl.ltl_repair.ltl_repair_sep_hier_transformer_experiment eval -n exp-repair-gen-96-0 -u -d val --beam-sizes 16
+
+To iteratively evaluate on the LTL synthesis problem, run the following command.
 
 .. code:: shell
 
-    python -m ml2.ltl.ltl_syn.ltl_syn_hier_transformer_experiment eval -n hier-transformer-0`
+    python -m ml2.ltl.ltl_repair.ltl_repair_sep_hier_transformer_experiment pipe -n exp-repair-gen-96-0 --base-model repair-data-2 --beam-base 16 --beam-repair 16 --repeats 2 --samples 350 -d syntcomp --keep all
 
-Datasets and Data Generation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To generate a dataset of specifications and AIGER circuits:
+A notebook in *notebooks/experiments.ipynb* guides through analysis of the evaluation results.
 
-.. code:: shell
-    
-    python -m ml2.ltl.ltl_syn.ltl_syn_data_gen_patterns --name dataset`
+
+Ablations
+~~~~~~~~~
+
+The results of training on a large selection of our diverse datasets and the results of our hyperparamter study can be found in `Google Sheets <https://docs.google.com/spreadsheets/d/e/2PACX-1vRshLfy0d6xFXVWOey0QTslL0cnf-DVpgnmdKsLiqAjGfYp2p0iLH_9gxGssw9bTc75PStkuoSY2TQm/pubhtml?gid=450169976&single=true>`_.
 
 How to Cite
 ~~~~~~~~~~~
 
 .. code:: tex
 
-    @inproceedings{neural_circuit_synthesis,
-        author    = {Frederik Schmitt and Christopher Hahn and Markus N. Rabe and Bernd Finkbeiner},
-        title     = {Neural Circuit Synthesis from Specification Patterns},
-        booktitle = {Advances in Neural Information Processing Systems 34 Pre-proceedings},
-        year      = {2021}
-        url       = {https://proceedings.neurips.cc/paper/2021/hash/8230bea7d54bcdf99cdfe85cb07313d5-Abstract.html}
-    }
-
-
-Teaching Temporal Logics to Neural Networks (`presented at ICLR 21 <https://iclr.cc/virtual/2021/poster/3332>`_)
--------------------------------------------------------------------------------------------------------------------
-
-In this project, Transformers were trained on the problem of finding a satisfying trace to a linear-time temporal logic (LTL) formula. While the training data was generated with classical solvers, providing only one of a possibly infinite number of solutions, the Transformers successfully generalized: while often deviating from the solutions found by the classical solver, they still predicted a correct solution to most formulas. Generalization was also demonstrated on larger formulas and formulas on which the classical solver timed out.
-
-Training
-~~~~~~~~
-
-To train a Transformer with default parameters on the trace generation problem:
-
-.. code:: shell
-
-    python -m ml2.ltl.ltl_sat.ltl_sat_transformer_experiment train
-
-For the propositional satisfiability experiment:
-
-.. code:: shell
-
-    python -m ml2.prop.prop_sat_transformer_experiment train
-
-Evaluation
-~~~~~~~~~~
-
-To evaluate a Transformer trained on the trace generation problem:
-
-.. code:: shell
-
-    python -m ml2.ltl.ltl_sat.ltl_sat_transformer_experiment eval -n hier-transformer-0`
-
-How to Cite
-~~~~~~~~~~~
-
-.. code:: tex
-
-    @inproceedings{teaching_temporal_logics,
-        title     = {Teaching Temporal Logics to Neural Networks},
-        author    = {Christopher Hahn and Frederik Schmitt and Jens U. Kreber and Markus N. Rabe and Bernd Finkbeiner},
+    @inproceedings{cosler_iterative_2023,
+        title    = {Iterative Circuit Repair Against Formal Specifications},
+        url      = {https://openreview.net/forum?id=SEcSahl0Ql},
+        language = {en},
         booktitle = {International Conference on Learning Representations},
-        year      = {2021},
-        url       = {https://openreview.net/forum?id=dOcQK-f4byz}
+        author   = {Cosler, Matthias and Schmitt, Frederik and Hahn, Christopher and Finkbeiner, Bernd},
+        year     = {2023},
+        pubstate = {forthcoming}
     }
