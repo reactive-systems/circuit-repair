@@ -34,7 +34,7 @@ To install ML2 from source, clone the git repo and install with pip as follows:
 
 .. code:: shell
 
-    git clone https://github.com/MatCos/ml2.git && \
+    git https://github.com/reactive-systems/circuit-repair.git && \
     cd ml2 && \
     pip install .
 
